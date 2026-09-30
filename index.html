@@ -14,6 +14,7 @@
 @media(prefers-reduced-motion:reduce){.spinner,.success-icon{animation:none}}
 .block{position:fixed!important;z-index:15}.block.placed{z-index:35;min-width:0;padding-left:10px;padding-right:10px;font-size:clamp(21px,2.5vw,34px)}.block.grabbed{z-index:45}
 .footprints{position:absolute;left:13%;bottom:19%;font-size:25px;color:#c5e7e1;opacity:.32;transform:rotate(-12deg);letter-spacing:9px}
+#fingerSensors{position:absolute;z-index:74;inset:0;pointer-events:none}#fingerSensors span{position:fixed;left:0;top:0;width:18px;height:18px;border:3px solid #fff;border-radius:50%;background:#39c7ff99;box-shadow:0 0 0 2px #1589bd,0 0 10px #6ee0ff;will-change:transform}#fingerSensors span.active{background:#ffe268;box-shadow:0 0 0 5px #ffbf3e88,0 0 15px #fff}
 @media(max-width:1100px){.answer-title{display:none}.answer-panel{grid-template-columns:1fr 90px}.block.placed{font-size:20px;padding-left:6px;padding-right:6px}}
 .celebration-star{position:fixed;z-index:150;color:#ffe36b;font-size:42px;pointer-events:none;text-shadow:0 0 14px #fff;animation:starFly 1.2s ease-out forwards}
 @keyframes starFly{to{transform:translate(var(--dx),var(--dy)) rotate(300deg) scale(.2);opacity:0}}
@@ -33,7 +34,7 @@
       <p class="tagline">Catch. Arrange. Build the Pattern!</p>
       <div class="mini-pattern" aria-label="Question pattern"><b class="wh">WH-word</b><em>+</em><b class="aux">does</b><em>+</em><b class="subject">it</b><em>+</em><b class="verb">V1</b><em>+</em><b class="mark">?</b></div>
       <div class="start-actions"><button id="startButton" class="primary">📷 START MISSION</button><button id="touchButton" class="secondary">☝ MOUSE / TOUCH</button></div>
-      <p class="small-note">Pinch to grab • Open fingers to release<br>เล่นแนวนอน • อนุญาตกล้อง • ไม่มีการบันทึกภาพ</p>
+      <p class="small-note">Touch with any fingertip, then pinch to grab • Open fingers to release<br>เล่นแนวนอน • อนุญาตกล้อง • ไม่มีการบันทึกภาพ</p>
     </div>
   </section>
 
@@ -46,9 +47,10 @@
     <div id="patternToast" hidden><div class="mini-pattern"><b class="wh">WH-word</b><em>+</em><b class="aux">does</b><em>+</em><b class="subject">it</b><em>+</em><b class="verb">V1</b><em>+</em><b class="mark">?</b></div></div>
     <div id="playField" aria-label="Floating pattern blocks"></div>
     <section class="answer-panel" aria-label="Answer area"><div class="answer-title"><span>BUILD THE PATTERN</span><small>Place all five blocks in order.</small></div><div id="slots"><button data-slot="0" aria-label="Position 1"><span>1</span></button><i>→</i><button data-slot="1" aria-label="Position 2"><span>2</span></button><i>→</i><button data-slot="2" aria-label="Position 3"><span>3</span></button><i>→</i><button data-slot="3" aria-label="Position 4"><span>4</span></button><i>→</i><button data-slot="4" aria-label="Position 5"><span>5</span></button></div><button id="checkButton" class="check" disabled>CHECK ✓</button></section>
+    <div id="fingerSensors" hidden aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
     <div id="cursor" hidden aria-hidden="true"><span></span></div>
     <div id="feedback" role="status" aria-live="polite"></div>
-    <footer><span id="mode">MOUSE / TOUCH MODE</span><p id="hint">Drag each block into a numbered slot.</p><span>PINCH → DRAG → RELEASE</span></footer>
+    <footer><span id="mode">MOUSE / TOUCH MODE</span><p id="hint">Drag each block into a numbered slot.</p><span>5 FINGERTIPS • PINCH → DRAG → RELEASE</span></footer>
     <aside id="teacherPanel" hidden><div><b>TEACHER CONTROLS</b><button id="closePanel">✕</button></div><button id="pause">Ⅱ Pause</button><button id="cameraToggle">Camera: Off</button><button id="trackingToggle">Hand tracking: On</button><button id="audioToggle">Audio: On</button><button id="fullScreen">⛶ Full screen</button><button id="restart">↻ Restart Game</button><p>Camera processing stays on this device.</p></aside>
   </section>
 
@@ -79,7 +81,8 @@
     app: $('#app'), camera: $('#camera'), start: $('#startScreen'), pattern: $('#patternScreen'), game: $('#gameScreen'), final: $('#finalScreen'),
     loading: $('#loading'), loadingTitle: $('#loadingTitle'), loadingText: $('#loadingText'), startButton: $('#startButton'), touchButton: $('#touchButton'), letsPlay: $('#letsPlay'),
     roundText: $('#roundText'), roundName: $('#roundName'), timer: $('#timer'), timeNote: $('#timeNote'), playField: $('#playField'), slots: [...document.querySelectorAll('#slots>button')],
-    check: $('#checkButton'), patternHelp: $('#patternHelp'), patternToast: $('#patternToast'), cursor: $('#cursor'), feedback: $('#feedback'), mode: $('#mode'), hint: $('#hint'),
+    check: $('#checkButton'), patternHelp: $('#patternHelp'), patternToast: $('#patternToast'), cursor: $('#cursor'), fingerSensors: $('#fingerSensors'),
+    fingerDots: [...document.querySelectorAll('#fingerSensors span')], feedback: $('#feedback'), mode: $('#mode'), hint: $('#hint'),
     settings: $('#settings'), teacherPanel: $('#teacherPanel'), closePanel: $('#closePanel'), pause: $('#pause'), cameraToggle: $('#cameraToggle'), trackingToggle: $('#trackingToggle'),
     audioToggle: $('#audioToggle'), fullScreen: $('#fullScreen'), restart: $('#restart'), skipCamera: $('#skipCamera'), pauseLayer: $('#pauseLayer'), resume: $('#resume'),
     roundResult: $('#roundResult'), nextRound: $('#nextRound'), playAgain: $('#playAgain')
@@ -89,7 +92,7 @@
     roundStart: 0, timeLeft: ROUND_TIME[0], pauseOffset: 0, pausedAt: 0, paused: false, solved: false,
     wantsCamera: true, cameraOn: false, trackingOn: true, audioOn: true, stream: null, hands: null, handsPromise: null,
     sendBusy: false, cameraEpoch: 0, lastSend: 0, lastVideoTime: -1, lastHandAt: 0, primaryWrist: null,
-    cursorX: innerWidth / 2, cursorY: innerHeight / 2, cursorVisible: false, pinch: { armed: false, closed: false, began: 0 },
+    cursorX: innerWidth / 2, cursorY: innerHeight / 2, cursorVisible: false, pinch: { armed: false, closed: false, finger: null },
     audioContext: null, toastTimer: 0, feedbackTimer: 0, raf: 0
   };
 
@@ -268,7 +271,15 @@
   function showCursor(x, y, grabbing) {
     state.cursorVisible = true; els.cursor.hidden = false; els.cursor.classList.toggle('grabbing', grabbing); els.cursor.style.transform = `translate3d(${x - 22}px,${y - 22}px,0)`;
   }
-  function hideCursor() { state.cursorVisible = false; els.cursor.hidden = true; }
+  function showFingerSensors(points, activeLandmark) {
+    els.fingerSensors.hidden = false;
+    els.fingerDots.forEach((dot, index) => {
+      const point = points[index];
+      dot.style.transform = `translate3d(${point.x - 9}px,${point.y - 9}px,0)`;
+      dot.classList.toggle('active', point.landmark === activeLandmark);
+    });
+  }
+  function hideCursor() { state.cursorVisible = false; els.cursor.hidden = true; els.fingerSensors.hidden = true; }
 
   function stars() {
     for (let i = 0; i < 16; i += 1) {
@@ -319,7 +330,7 @@
       const [stream, hands] = await Promise.all([navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }), ensureHands()]);
       if (epoch !== state.cameraEpoch) { stream.getTracks().forEach((track) => track.stop()); return; }
       state.stream = stream; state.hands = hands; els.camera.srcObject = stream; await els.camera.play(); state.cameraOn = true; state.trackingOn = true; state.lastVideoTime = -1;
-      els.app.classList.add('camera-live'); els.mode.textContent = 'CAMERA + HAND MODE'; els.hint.textContent = 'Pinch a block. Open above a slot.'; showFeedback('Camera ready. Hold up one hand.', false, 2200);
+      els.app.classList.add('camera-live'); els.mode.textContent = 'CAMERA + 5-FINGER MODE'; els.hint.textContent = 'Touch with any fingertip, pinch, then open above a slot.'; showFeedback('Five fingertip sensors are ready.', false, 2200);
     } catch (error) {
       console.warn('Camera fallback:', error); state.cameraOn = false; state.wantsCamera = false; els.mode.textContent = 'MOUSE / TOUCH MODE'; els.hint.textContent = 'Camera unavailable. Drag with mouse or touch.'; showFeedback('Camera unavailable — mouse and touch are ready.', false, 3200);
     } finally { if (epoch === state.cameraEpoch) els.loading.hidden = true; updateControls(); }
@@ -344,16 +355,37 @@
   function processHands(results) {
     if (!state.cameraOn || !state.trackingOn || state.screen !== 'game' || state.paused) return;
     const hand = primaryHand(results.multiHandLandmarks);
-    if (!hand) { if (performance.now() - state.lastHandAt > 300) { hideCursor(); state.pinch.armed = false; state.pinch.closed = false; if (state.drag?.source === 'hand') endDrag(true); } return; }
-    state.primaryWrist = { x: hand[0].x, y: hand[0].y }; state.lastHandAt = performance.now(); const point = toViewport(hand[8]); const alpha = state.cursorVisible ? .52 : 1;
-    state.cursorX += (point.x - state.cursorX) * alpha; state.cursorY += (point.y - state.cursorY) * alpha;
-    const aspect = (els.camera.videoWidth || 1280) / (els.camera.videoHeight || 720); const dx = (hand[4].x - hand[8].x) * aspect; const dy = hand[4].y - hand[8].y;
-    const pdx = (hand[5].x - hand[17].x) * aspect; const pdy = hand[5].y - hand[17].y; const ratio = Math.hypot(dx, dy) / Math.max(.035, Math.hypot(pdx, pdy));
-    if (ratio > .64) state.pinch.armed = true; const closed = ratio < .40;
-    if (closed && !state.pinch.closed && state.pinch.armed) state.pinch.began = performance.now();
-    if (closed && state.pinch.armed && !state.drag && performance.now() - state.pinch.began > 55) { const block = blockAt(state.cursorX, state.cursorY); if (block) beginDrag(block, state.cursorX, state.cursorY, 'hand'); state.pinch.armed = false; }
-    if (!closed && state.pinch.closed && ratio > .58 && state.drag?.source === 'hand') endDrag(false);
-    state.pinch.closed = closed; if (state.drag?.source === 'hand') dragTo(state.cursorX, state.cursorY); showCursor(state.cursorX, state.cursorY, state.drag?.source === 'hand');
+    if (!hand) { if (performance.now() - state.lastHandAt > 300) { hideCursor(); state.pinch.armed = false; state.pinch.closed = false; state.pinch.finger = null; if (state.drag?.source === 'hand') endDrag(true); } return; }
+    state.primaryWrist = { x: hand[0].x, y: hand[0].y }; state.lastHandAt = performance.now();
+    const tipLandmarks = [4, 8, 12, 16, 20];
+    const fingerPoints = tipLandmarks.map((landmark) => ({ ...toViewport(hand[landmark]), landmark }));
+    const aspect = (els.camera.videoWidth || 1280) / (els.camera.videoHeight || 720);
+    const pdx = (hand[5].x - hand[17].x) * aspect; const pdy = hand[5].y - hand[17].y; const palmSpan = Math.max(.035, Math.hypot(pdx, pdy));
+    const candidates = [8, 12, 16, 20].map((landmark) => {
+      const dx = (hand[4].x - hand[landmark].x) * aspect; const dy = hand[4].y - hand[landmark].y;
+      return { landmark, ratio: Math.hypot(dx, dy) / palmSpan };
+    }).sort((a, b) => a.ratio - b.ratio);
+    const nearest = candidates[0];
+    const activeLandmark = state.pinch.closed && state.pinch.finger ? state.pinch.finger : nearest.landmark;
+    const chosen = candidates.find((item) => item.landmark === activeLandmark) || nearest;
+    const thumbPoint = fingerPoints[0]; const chosenPoint = fingerPoints.find((point) => point.landmark === activeLandmark);
+    const controlPoint = { x: (thumbPoint.x + chosenPoint.x) / 2, y: (thumbPoint.y + chosenPoint.y) / 2 };
+    const alpha = state.cursorVisible ? .62 : 1;
+    state.cursorX += (controlPoint.x - state.cursorX) * alpha; state.cursorY += (controlPoint.y - state.cursorY) * alpha;
+    showFingerSensors(fingerPoints, activeLandmark);
+
+    if (!state.pinch.closed && !state.drag) state.pinch.armed = true;
+    if (!state.pinch.closed && state.pinch.armed && nearest.ratio < .38) {
+      state.pinch.closed = true; state.pinch.finger = nearest.landmark; state.pinch.armed = false;
+      state.cursorX = controlPoint.x; state.cursorY = controlPoint.y;
+      const block = blockAt(state.cursorX, state.cursorY) || fingerPoints.map((point) => blockAt(point.x, point.y)).find(Boolean);
+      if (block) beginDrag(block, state.cursorX, state.cursorY, 'hand');
+    } else if (state.pinch.closed && chosen.ratio > .54) {
+      if (state.drag?.source === 'hand') endDrag(false);
+      state.pinch.closed = false; state.pinch.finger = null; state.pinch.armed = true;
+    }
+    if (state.drag?.source === 'hand') dragTo(state.cursorX, state.cursorY);
+    showCursor(state.cursorX, state.cursorY, state.drag?.source === 'hand');
   }
 
   async function pumpCamera(now) {
